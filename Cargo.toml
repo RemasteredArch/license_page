@@ -1,5 +1,6 @@
 [package]
 name = "license_display"
+description = "A crate for generating dependency license pages"
 authors = ["RemasteredArch"]
 readme = true
 license = "MPL-2.0"
