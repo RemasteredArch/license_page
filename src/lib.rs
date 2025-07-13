@@ -1,0 +1,259 @@
+use std::{collections::HashMap, fmt::Display, process::Command, str::FromStr};
+
+use spdx::Expression;
+
+const CARGO_LICENSE_TSV_FIRST_LINE: &str =
+    "name\tversion\tauthors\trepository\tlicense\tlicense_file\tdescription";
+
+fn cargo_license_stdout(location: &str) -> String {
+    let output = match Command::new("cargo")
+        .args([
+            "license",
+            "--current-dir",
+            location,
+            "--avoid-build-deps",
+            "--avoid-dev-deps",
+            "--authors",
+            "--tsv",
+        ])
+        .output()
+    {
+        Ok(output) => output,
+        Err(e) => panic!("Failed to execute `cargo-license`: {e}"),
+    };
+    let stdout = if output.status.success() {
+        output.stdout
+    } else {
+        let mut message = format!("`cargo-license` failed (exit status {})", output.status);
+        if let Ok(stderr) = str::from_utf8(output.stderr.as_slice()) {
+            message = format!(": {stderr}")
+        }
+        panic!("{message}");
+    };
+
+    String::from_utf8(stdout).expect("Received invalid UTF-8 from `cargo-license`")
+}
+
+#[derive(Clone)]
+pub struct Author {
+    pub name: String,
+    pub email: Option<String>,
+}
+
+impl Display for Author {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let formatted_email = if let Some(email) = &self.email {
+            format!(" <{email}>")
+        } else {
+            String::new()
+        };
+
+        write!(f, "{}{formatted_email}", self.name)
+    }
+}
+
+pub struct EmptyAuthorError;
+
+impl FromStr for Author {
+    type Err = EmptyAuthorError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = s.split(' ').collect::<Vec<_>>();
+
+        if parts.is_empty() || (parts.len() == 1 && !parts.first().unwrap().is_empty()) {
+            return Err(EmptyAuthorError);
+        }
+
+        let email =
+            // Assume there has to at _least_ be a name before the email.
+            if parts.len() > 1
+                // An email address is always at the end of the entry and must be wrapped in angle
+                // brackets.
+                //
+                // <https://github.com/rust-lang/cargo/blob/74544f1/src/doc/src/reference/manifest.md?plain=1#L121-L136>
+                && parts.last().unwrap().starts_with('<')
+                && parts.last().unwrap().ends_with('>')
+            {
+            Some(
+                parts
+                    .pop()
+                    .unwrap()
+                    .strip_prefix('<')
+                    .unwrap()
+                    .strip_suffix('>')
+                    .unwrap()
+                    .to_string()
+            )
+        } else {
+            None
+        };
+        let name = parts.join(" ");
+
+        Ok(Self { name, email })
+    }
+}
+
+// Yes, this is unoptimized. No, I don't care right now.
+pub fn escape_markdown(str: String) -> String {
+    let mut out = String::new();
+    for char in str.chars() {
+        // CommonMark allows you to escape any ASCII punctuation. It's easier to be overly eager
+        // than try to detect where it's absolutely necessary.
+        //
+        // <https://spec.commonmark.org/0.31.2/#backslash-escapes>
+        if char.is_ascii_punctuation() {
+            out.push('\\');
+        }
+
+        out.push(char);
+    }
+    out
+}
+
+#[derive(Clone)]
+pub struct Crate {
+    pub name: String,
+    pub version: String,
+    pub authors: Box<[Author]>,
+    pub repository: String,
+    pub license: Expression,
+}
+
+pub struct CrateMarkdown {
+    pub name: String,
+    pub version: String,
+    pub authors: Box<[String]>,
+    pub repository: String,
+    pub license: String,
+}
+
+impl Crate {
+    /// Creates a new [`Self`] with each field formatted into valid Markdown.
+    ///
+    /// For example, [`Self::name`] is wrapped in backticks and [`Self::repository`] is wrapped in
+    /// angle brackets.
+    ///
+    /// Assumes that fields are well-formed, e.g., that [`Self::name`] is a valid crate name, that
+    /// [`Author::email`] is a well-formed email for all authors in [`Self::authors`], that
+    /// [`Self::repository`] is a well-formed URL, etc.
+    pub fn into_markdown(self) -> CrateMarkdown {
+        CrateMarkdown {
+            // A Crate name shouldn't have backticks and nothing in backticks needs to be escaped
+            // in CommonMark, so no escaping is needed here.
+            name: format!("`{}`", self.name),
+            // Probably excessive, but a particularly nasty SemVer version could probably have
+            // something nasty, so I may as well escape it.
+            version: escape_markdown(self.version),
+            authors: self
+                .authors
+                .into_iter()
+                .map(|mut author| {
+                    // Assume that the email is well-formed. I don't care enough to be validating
+                    // email right now!
+                    author.name = escape_markdown(author.name);
+                    author.to_string()
+                })
+                .collect(),
+            repository: format!("<{}>", self.repository),
+            // On brief investigation, I don't think an SPDX license expression should contain
+            // backticks. Nothing in backticks needs to be escaped in CommonMark, so no escaping is
+            // needed here.
+            //
+            // See:
+            //
+            // - <https://spdx.org/licenses/>
+            // - <https://spdx.dev/wp-content/uploads/sites/31/2024/12/SPDX-3.0.1-1.pdf>
+            license: format!("`{}`", self.license),
+        }
+    }
+}
+
+pub struct CrateList {
+    list: Box<[Crate]>,
+}
+
+impl CrateList {
+    pub fn from_cargo_license_output(stdout: &str) -> Self {
+        macro_rules! column {
+            ($lines_iter:expr, $column_name:ident) => {
+                let $column_name = $lines_iter
+                    .next()
+                    .expect(concat!(
+                        "Received invalid output from `cargo-license`: missing crate ",
+                        stringify!($column_name),
+                    ))
+                    .to_string();
+            };
+        }
+
+        let mut lines = stdout.lines();
+
+        let first = lines
+            .next()
+            .expect("Received empty output from `cargo-license`!");
+        assert_eq!(
+            first, CARGO_LICENSE_TSV_FIRST_LINE,
+            "Received unexpected first line from `cargo-license`: {first}",
+        );
+
+        let crates = lines
+            .map(|line| {
+                let mut columns = line.split('\t');
+                column!(columns, name);
+                column!(columns, version);
+                column!(columns, authors);
+                column!(columns, repository);
+                column!(columns, license);
+
+                Crate {
+                    name,
+                    version,
+                    authors: authors
+                        .split('|')
+                        .filter_map(|a| a.parse().ok())
+                        .collect::<Box<[Author]>>(),
+                    repository,
+                    license: license.parse().unwrap(),
+                }
+            })
+            .collect();
+        CrateList { list: crates }
+    }
+
+    pub fn by_license(&self) -> Box<[(usize, &Expression, Box<[&Crate]>)]> {
+        fn increment_and_append_or_insert<'a>(
+            map: &mut HashMap<&'a str, (usize, Vec<&'a Crate>)>,
+            current_crate: &'a Crate,
+        ) {
+            let license: &str = current_crate.license.as_ref();
+            match map.get_mut(license) {
+                Some((current_count, crates)) => {
+                    *current_count += 1;
+                    crates.push(current_crate);
+                }
+                None => {
+                    map.insert(license, (1, Vec::from([current_crate])));
+                }
+            };
+        }
+
+        let mut by_license: HashMap<&str, (usize, Vec<&Crate>)> = HashMap::new();
+        for current_crate in self.list.iter() {
+            increment_and_append_or_insert(&mut by_license, current_crate);
+        }
+        let mut vec = by_license
+            .into_iter()
+            .map(|(license, (count, crates))| {
+                (count, &crates[0].license, crates.into_boxed_slice())
+            })
+            .collect::<Vec<_>>();
+        vec.sort_unstable_by(|(count_lhs, _, _), (count_rhs, _, _)| {
+            count_lhs.cmp(count_rhs).reverse()
+        });
+        vec.into_boxed_slice()
+    }
+}
+
+pub fn get_crates(location: &str) -> CrateList {
+    CrateList::from_cargo_license_output(cargo_license_stdout(location).as_str())
+}
