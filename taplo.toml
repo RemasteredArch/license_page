@@ -1,0 +1,5 @@
+[formatting]
+column_width = 100
+indent_string = "    "
+# Allows only one consecutive blank line.
+allowed_blank_lines = 1

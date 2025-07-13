@@ -1,0 +1,112 @@
+# Max number of columns that (most) lines should be.
+max_width = 100
+
+# Certain things (e.g., struct literals) will wrap earlier than `max_width`. Setting `"Max"` will
+# set all of these granular width settings to match `max_width`.
+#
+# I am uncertain on this.
+use_small_heuristics = "Default"
+
+# Set the edition of Rust that Rustfmt should be targeting.
+#
+# This is set automatically by Cargo, but setting it here will allow standalone `rustfmt` calls to
+# pick up on it.
+edition = "2024"
+
+# Always use LF newlines, never CRLF.
+newline_style = "Unix"
+
+# Use field init shorthand for structs:
+#
+# ```rust
+# struct Num {
+#     x: i32,
+# }
+# let x = 5;
+# let num = Num { x }; // Compare to `Num { x: x }`.
+# ```
+use_field_init_shorthand = true
+
+# Collapse multiple `derive` calls onto a single call.
+merge_derives = true
+
+# Reorder groups of `use` and `extern crate` statements alphabetically.
+reorder_imports = true
+
+# Reorder groups of `mod` statements alphabetically.
+reorder_modules = true
+
+# These options are disabled because they are currently unstable:
+#
+# ```toml
+# # Use unstable configuration options for Rustfmt.
+# unstable_features = true
+#
+# # Add a trailing zero to all floats without exponents or suffixes.
+# #
+# # E.g., `3.0`, `3e10`, `3f64`, not `3.` or `3.0e10`.
+# float_literal_trailing_zero = "IfNoPostfix"
+#
+# # Format the bodies of macros by example (AKA declarative macros).
+# format_macro_bodies = true
+#
+# # Format the matching statements of macros by example (AKA declarative macros).
+# format_macro_matchers = true
+#
+# # Wrap strings that run past `max_width`.
+# format_strings = true
+#
+# # Whether hexadecimal literals should use upper or lowercase characters.
+# hex_literal_case = "Lower"
+#
+# # Group `use` statements into three groups: `std`/`alloc`/`core`, external crates, and this crate.
+# group_imports = "StdExternalCrate"
+#
+# # Collapse `use` statements from the same crate.
+# imports_granularity = "Crate"
+#
+# # Put `type` and `const` items in `impl` blocks before macros and functions.
+# reorder_impl_items = true
+#
+# # Convert `/* */` comments to `//` comments.
+# normalize_comments = true
+#
+# # Convert `#[doc]` attributes to `///` documentation comments and `#![doc]` attributes to `//!`
+# # documentation comments.
+# normalize_doc_attributes = true
+#
+# # Wrap lines in comments over `comment_width`.
+# #
+# # Does not wrap headers or lines with URLs.
+# wrap_comments = true
+#
+# # Let comments extend to 100 columns.
+# comment_width = 100
+#
+# # Format doctests.
+# format_code_in_doc_comments = true
+#
+# # Collapse repeated `_, _,` in tuple destructuring to a single `..`.
+# condense_wildcard_suffixes = true
+#
+# # When structs, slices, etc. are the last item in an expression list, allow them to overflow whilst
+# # still starting on that first line, instead of being dumped onto a newline and indented.
+# #
+# # ```rust
+# # // `overflow_delimited_expr = false` (default)
+# # foo(
+# #     bar,
+# #     &[
+# #         "baz",
+# #     ],
+# # )
+# #
+# # // `overflow_delimited_expr = true`
+# # foo(bar, &[
+# #     "baz",
+# # ])
+# # ```
+# #
+# # I am uncertain on this.
+# overflow_delimited_expr = false
+# ```
