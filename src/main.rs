@@ -1,8 +1,16 @@
+// SPDX-License-Identifier: MPL-2.0
+//
+// Copyright © 2025 RemasteredArch
+//
+// This Source Code Form is subject to the terms of the Mozilla Public License, version 2.0. If a
+// copy of the Mozilla Public License was not distributed with this file, You can obtain one at
+// <https://mozilla.org/MPL/2.0/>.
+
 #![warn(clippy::nursery, clippy::pedantic)]
 
 use std::collections::BTreeSet;
 
-use license_display::CrateMarkdown;
+use license_page::CrateMarkdown;
 use spdx::{ExceptionId, LicenseId};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
@@ -41,7 +49,7 @@ impl From<ExceptionId> for LicensePart {
 
 fn main() {
     let location = std::env::args().nth(1).unwrap_or_else(|| ".".to_string());
-    let crates = license_display::get_crates(location.as_str());
+    let crates = license_page::get_crates(location.as_str());
 
     let by_license = crates.by_license();
 
@@ -51,7 +59,7 @@ fn main() {
     //         "{license} ({count}): {}",
     //         crates
     //             .iter()
-    //             .map(|license_display::Crate { name, .. }| name.as_str())
+    //             .map(|license_page::Crate { name, .. }| name.as_str())
     //             .collect::<Vec<_>>()
     //             .join(", ")
     //     );
@@ -113,7 +121,7 @@ fn main() {
     println!("\n# License and Exception Full Texts");
 
     for id in ids_to_print {
-        println!("\n## {}\n", license_display::escape_markdown(id.title()));
+        println!("\n## {}\n", license_page::escape_markdown(id.title()));
 
         for line in id.text().lines() {
             println!("> {line}");

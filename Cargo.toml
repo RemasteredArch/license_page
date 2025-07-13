@@ -1,7 +1,8 @@
 [package]
-name = "license_display"
+name = "license_page"
 description = "A crate for generating dependency license pages"
 authors = ["RemasteredArch"]
+repository = "https://github.com/RemasteredArch/license_page"
 readme = true
 license = "MPL-2.0"
 version = "0.1.0"

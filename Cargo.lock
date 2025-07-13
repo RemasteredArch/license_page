@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "license_display"
+name = "license_page"
 version = "0.1.0"
 dependencies = [
  "spdx",
