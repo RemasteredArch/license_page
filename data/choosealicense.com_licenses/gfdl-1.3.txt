@@ -1,39 +1,3 @@
----
-title: GNU Free Documentation License v1.3
-
-spdx-id: GFDL-1.3
-
-description: A copyleft license for software documentation.
-
-how: Create a text file (typically named COPYING, as per GNU conventions) in the root of your source code and copy the text of the license into the file.
-
-note: The Free Software Foundation recommends taking the additional step of adding a boilerplate notice after the title of a licensed document. The boilerplate can be found at the "addendum" part of the license.
-
-using:
-  GNU LilyPond (Documentation): https://git.savannah.gnu.org/cgit/lilypond.git/tree/COPYING.FDL
-  GNU Scientific Library (Documentation): https://git.savannah.gnu.org/cgit/gsl.git/tree/doc/_static/fdl.txt
-  Qt (Documentation): https://code.qt.io/cgit/qt/qt.git/tree/LICENSE.FDL
-  
-permissions:
-  - commercial-use
-  - modifications
-  - distribution
-  - private-use
-
-conditions:
-  - include-copyright
-  - disclose-source
-  - same-license
-  - document-changes
-
-limitations:
-  - liability
-  - warranty
----
-
-                GNU Free Documentation License
-                 Version 1.3, 3 November 2008
-
 
  Copyright (C) 2000, 2001, 2002, 2007, 2008 Free Software Foundation, Inc.
      <https://fsf.org/>

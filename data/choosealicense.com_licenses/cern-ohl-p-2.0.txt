@@ -1,37 +1,3 @@
----
-title: CERN Open Hardware Licence Version 2 - Permissive
-spdx-id: CERN-OHL-P-2.0
-nickname: CERN OHL v2 Permissive
-
-description: A permissive license for hardware designs, with conditions only requiring preservation of notices. Contributors provide an express grant of patent rights. Licensed works, modifications, and larger works may be distributed under different terms and without sources.
-
-how: Create a text file (typically named LICENSE or LICENSE.txt) in the root of your source code and copy the text of the license into the file.
-
-note: 'CERN <a href="https://gitlab.com/ohwr/project/cernohl/-/wikis/uploads/8a6b5d01f71c207c49493e4d114d61e6/cern_ohl_p_v2_howto.pdf">recommends</a> adding the following information in the source files: copyright and license notice, a disclaimer of warranties and a source location. You can also include the source location in a part of the design which will be visible in the end product.'
-
-using:
-  tedium: https://github.com/jboone/tedium/blob/master/LICENSE-CERN-OHL-P-v2
-  LEDEAF: https://github.com/adamgreig/ledeaf/blob/master/LICENSE_CERN_OHL_P_v2.txt
-  Open source controller board for ventilators: https://github.com/CV19CO/open_controller_for_ventilator/blob/master/LICENSE
-
-permissions:
-  - commercial-use
-  - modifications
-  - distribution
-  - private-use
-  - patent-use
-
-conditions:
-  - include-copyright
-  - document-changes
-
-limitations:
-  - liability
-  - warranty
-
----
-CERN Open Hardware Licence Version 2 - Permissive
-
 
 Preamble
 

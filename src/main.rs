@@ -27,9 +27,25 @@ impl LicensePart {
         }
     }
 
+    /// It will first check if a license is present in
+    /// [the licenses from `choosealicense.com`](https://github.com/github/choosealicense.com/tree/gh-pages/_licenses)
+    /// (which provides hand-wrapped copies license texts), otherwise it will pull the text from
+    /// [`spdx`] (which themselves are drawn from
+    /// [SPDX's plain text license dumps](https://github.com/spdx/license-list-data/tree/main/text)).
+    /// Only licenses and exceptions from the [SPDX License List](https://spdx.org/licenses) are
+    /// supported.
     fn text(&self) -> &'static str {
         match self {
-            Self::License(license_id) => license_id.text(),
+            Self::License(license_id) => {
+                // Sorts by lowercase byte value, which should hopefully match that of
+                // `harvest_licenses.sh`.
+                license_page::LICENSE_TEXTS
+                    .binary_search_by_key(&license_id.name.to_lowercase().as_str(), |(id, _)| id)
+                    .map_or_else(
+                        |_| license_id.text(),
+                        |index| license_page::LICENSE_TEXTS[index].1,
+                    )
+            }
             Self::Exception(exception_id) => exception_id.text(),
         }
     }
@@ -121,12 +137,10 @@ fn main() {
     println!("\n# License and Exception Full Texts");
 
     for id in ids_to_print {
-        println!("\n## {}\n", license_page::escape_markdown(id.title()));
-
-        for line in id.text().lines() {
-            println!("> {line}");
-        }
-
-        println!();
+        println!(
+            "\n## {}\n\n```text\n{}```",
+            license_page::escape_markdown(id.title()),
+            id.text()
+        );
     }
 }

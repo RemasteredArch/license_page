@@ -1,38 +1,3 @@
----
-title: Open Data Commons Open Database License v1.0
-spdx-id: ODbL-1.0
-nickname: ODbL
-
-description: The Open Database License (ODbL) is a license agreement intended to allow users to freely share, modify, and use a database while maintaining this same freedom for others.
-
-how: Create a text file (typically named LICENSE or LICENSE.txt) in the root of your source code and copy the text of the license into the file.
-
-using:
-  World Countries: https://github.com/mledoze/countries/blob/master/LICENSE
-  OpenFlights: https://github.com/jpatokal/openflights/blob/master/data/LICENSE
-  Public Zone Database: https://github.com/zonedb/zonedb/blob/main/LICENSE-DATA.md
-
-permissions:
-  - commercial-use
-  - distribution
-  - modifications
-  - private-use
-
-conditions:
-  - disclose-source
-  - include-copyright
-  - same-license
-
-limitations:
-  - liability
-  - patent-use
-  - trademark-use
-  - warranty
-
----
-
-## ODC Open Database License (ODbL)
-
 ### Preamble
 
 The Open Database License (ODbL) is a license agreement intended to

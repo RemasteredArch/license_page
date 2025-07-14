@@ -1,34 +1,3 @@
----
-title: BSD-2-Clause Plus Patent License
-spdx-id: BSD-2-Clause-Patent
-
-description: "This license is designed to provide: a) a simple permissive license; b) that is compatible with the GNU GPL-2.0; and c) which also has an express patent grant included."
-
-how: Create a text file (typically named LICENSE or LICENSE.txt) in the root of your source code and copy the text of the license into the file. Replace [year] with the current year and [fullname] with the name (or names) of the copyright holders.
-
-using:
-  Manubot: https://github.com/manubot/manubot/blob/main/LICENSE.md
-  obonet: https://github.com/dhimmel/obonet/blob/main/LICENSE.md
-  Preprint Similarity Search: https://github.com/greenelab/preprint-similarity-search/blob/master/LICENSE.md
-
-permissions:
-  - commercial-use
-  - modifications
-  - distribution
-  - patent-use
-  - private-use
-
-conditions:
-  - include-copyright
-
-limitations:
-  - liability
-  - warranty
-
----
-
-Copyright (c) [year] [fullname]
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 
