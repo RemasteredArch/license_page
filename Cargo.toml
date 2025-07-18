@@ -1,12 +1,28 @@
 [package]
 name = "license_page"
 description = "A crate for generating dependency license pages"
-authors = ["RemasteredArch"]
-repository = "https://github.com/RemasteredArch/license_page"
-readme = true
-license = "MPL-2.0"
 version = "0.1.0"
-edition = "2024"
+
+authors.workspace = true
+repository.workspace = true
+readme.workspace = true
+publish.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[workspace]
+package.authors = ["RemasteredArch"]
+package.repository = "https://github.com/RemasteredArch/license_page"
+package.readme = true
+package.publish = false
+package.license = "MPL-2.0"
+package.edition = "2024"
+
+members = ["license_page_cli"]
+
+[workspace.lints]
+clippy.nursery = "warn"
+clippy.pedantic = "warn"
 
 [dependencies]
 spdx = { version = "0.10.8", features = ["text"] }
