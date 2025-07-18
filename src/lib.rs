@@ -217,7 +217,7 @@ impl CrateList {
 
         let first = lines
             .next()
-            .expect("Received empty output from `cargo-license`!");
+            .expect("Received empty output from `cargo-license`");
         assert_eq!(
             first, CARGO_LICENSE_TSV_FIRST_LINE,
             "Received unexpected first line from `cargo-license`: {first}",
@@ -233,14 +233,21 @@ impl CrateList {
                 column!(columns, license);
 
                 Crate {
-                    name,
-                    version,
                     authors: authors
                         .split('|')
                         .filter_map(|a| a.parse().ok())
                         .collect::<Box<[Author]>>(),
                     repository,
-                    license: license.parse().unwrap(),
+                    license: license.parse().unwrap_or_else(|e: spdx::ParseError| match e.reason {
+                            spdx::error::Reason::Empty => {
+                                panic!("Received crate `{name}` (version `{version}`) without a listed license")
+                            }
+                            _ => panic!("{e}"),
+                        }),
+                    // Out of order to allow the `license` error to reference the crate name and
+                    // version.
+                    name,
+                    version,
                 }
             })
             .collect();
