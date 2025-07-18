@@ -6,9 +6,15 @@
 // copy of the Mozilla Public License was not distributed with this file, You can obtain one at
 // <https://mozilla.org/MPL/2.0/>.
 
-use std::{collections::HashMap, fmt::Display, process::Command, str::FromStr};
+use std::{
+    collections::{BTreeSet, HashMap},
+    fmt::Display,
+    io::Write,
+    process::Command,
+    str::FromStr,
+};
 
-use spdx::Expression;
+use spdx::{ExceptionId, Expression, LicenseId};
 
 const CARGO_LICENSE_TSV_FIRST_LINE: &str =
     "name\tversion\tauthors\trepository\tlicense\tlicense_file\tdescription";
@@ -188,6 +194,12 @@ pub struct CrateList {
 }
 
 impl CrateList {
+    /// Calls `cargo-license` in the given directory, then returns the result of
+    /// [`Self::from_cargo_license_output`] on the result.
+    pub fn from_crate_directory(directory_path: &str) -> Self {
+        Self::from_cargo_license_output(cargo_license_stdout(directory_path).as_str())
+    }
+
     pub fn from_cargo_license_output(stdout: &str) -> Self {
         macro_rules! column {
             ($lines_iter:expr, $column_name:ident) => {
@@ -265,8 +277,119 @@ impl CrateList {
         });
         vec.into_boxed_slice()
     }
+
+    pub fn to_markdown_license_page(&self, out: &mut impl Write) -> std::io::Result<()> {
+        writeln!(out, "# Crate Licenses")?;
+        let mut ids_to_print = BTreeSet::<LicensePart>::new();
+
+        for (count, license_expression, crates) in self.by_license() {
+            writeln!(
+                out,
+                "\n## `{license_expression}`\n\nUsed by {count} {}:\n",
+                if count == 1 { "crate" } else { "crates" }
+            )?;
+
+            for CrateMarkdown {
+                name,
+                version,
+                authors,
+                repository,
+                ..
+            } in crates.iter().map(|&c| c.clone().into_markdown())
+            {
+                writeln!(out, "- {name} {version}\n  - Repository: {repository}")?;
+                match authors.len() {
+                    0 => (),
+                    1 => {
+                        writeln!(out, "  - Primary author: {}", authors[0])?;
+                    }
+                    _ => {
+                        writeln!(out, "  - Primary authors:")?;
+                        for author in authors {
+                            writeln!(out, "    - {author}")?;
+                        }
+                    }
+                }
+            }
+
+            for req in license_expression.requirements() {
+                let spdx::LicenseReq {
+                    license: license_item,
+                    exception,
+                } = &req.req;
+
+                let license_id = match license_item {
+                    spdx::LicenseItem::Spdx { id, .. } => id,
+                    spdx::LicenseItem::Other { .. } => {
+                        panic!("Received non-SPDX item in license `{license_expression}`")
+                    }
+                };
+
+                ids_to_print.insert((*license_id).into());
+                if let Some(exception_id) = exception {
+                    ids_to_print.insert((*exception_id).into());
+                }
+            }
+        }
+
+        writeln!(out, "\n# License and Exception Full Texts")?;
+
+        for id in ids_to_print {
+            writeln!(
+                out,
+                "\n## {}\n\n```text\n{}```",
+                escape_markdown(id.title()),
+                id.text()
+            )?;
+        }
+
+        Ok(())
+    }
 }
 
-pub fn get_crates(location: &str) -> CrateList {
-    CrateList::from_cargo_license_output(cargo_license_stdout(location).as_str())
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub enum LicensePart {
+    License(LicenseId),
+    Exception(ExceptionId),
+}
+
+impl LicensePart {
+    fn title(&self) -> String {
+        match self {
+            Self::License(license_id) => license_id.full_name.to_string(),
+            Self::Exception(exception_id) => format!("`{}`", exception_id.name),
+        }
+    }
+
+    /// It will first check if a license is present in
+    /// [the licenses from `choosealicense.com`](https://github.com/github/choosealicense.com/tree/gh-pages/_licenses)
+    /// (which provides hand-wrapped copies license texts), otherwise it will pull the text from
+    /// [`spdx`] (which themselves are drawn from
+    /// [SPDX's plain text license dumps](https://github.com/spdx/license-list-data/tree/main/text)).
+    /// Only licenses and exceptions from the [SPDX License List](https://spdx.org/licenses) are
+    /// supported.
+    fn text(&self) -> &'static str {
+        match self {
+            Self::License(license_id) => {
+                // Sorts by lowercase byte value, which should hopefully match that of
+                // `harvest_licenses.sh`.
+                LICENSE_TEXTS
+                    .binary_search_by_key(&license_id.name.to_lowercase().as_str(), |(id, _)| id)
+                    .map_or_else(|_| license_id.text(), |index| LICENSE_TEXTS[index].1)
+            }
+            Self::Exception(exception_id) => exception_id.text(),
+        }
+    }
+}
+
+impl From<LicenseId> for LicensePart {
+    fn from(value: LicenseId) -> Self {
+        Self::License(value)
+    }
+}
+
+impl From<ExceptionId> for LicensePart {
+    fn from(value: ExceptionId) -> Self {
+        Self::Exception(value)
+    }
 }
