@@ -25,4 +25,7 @@ clippy.nursery = "warn"
 clippy.pedantic = "warn"
 
 [dependencies]
+cargo-license = "0.6.1"
+# Held back to `v0.18.1` to match the version used by `cargo-license`.
+cargo_metadata = "0.18.1"
 spdx = { version = "0.10.8", features = ["text"] }
