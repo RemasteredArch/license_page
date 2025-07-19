@@ -319,7 +319,7 @@ impl CrateList {
             writeln!(
                 out,
                 "\n## {}\n\n```text\n{}```",
-                escape_markdown(id.title()),
+                id.title_markdown(),
                 id.text()
             )?;
         }
@@ -335,9 +335,16 @@ pub enum LicensePart {
 }
 
 impl LicensePart {
-    fn title(&self) -> String {
+    pub fn title(&self) -> &str {
         match self {
-            Self::License(license_id) => license_id.full_name.to_string(),
+            Self::License(license_id) => license_id.full_name,
+            Self::Exception(exception_id) => exception_id.name,
+        }
+    }
+
+    pub fn title_markdown(&self) -> String {
+        match self {
+            Self::License(license_id) => escape_markdown(license_id.full_name.to_string()),
             Self::Exception(exception_id) => format!("`{}`", exception_id.name),
         }
     }
@@ -349,7 +356,7 @@ impl LicensePart {
     /// [SPDX's plain text license dumps](https://github.com/spdx/license-list-data/tree/main/text)).
     /// Only licenses and exceptions from the [SPDX License List](https://spdx.org/licenses) are
     /// supported.
-    fn text(&self) -> &'static str {
+    pub fn text(&self) -> &'static str {
         match self {
             Self::License(license_id) => {
                 // Sorts by lowercase byte value, which should hopefully match that of
