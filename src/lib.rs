@@ -174,11 +174,12 @@ impl CrateList {
             // assertions are enabled.
             avoid_dev_deps: !cfg!(debug_assertions),
             avoid_build_deps: true,
+            avoid_proc_macros: false,
             direct_deps_only: false,
             root_only: false,
         };
 
-        let list = cargo_license::get_dependencies_from_cargo_lock(cmd, opts)
+        let list = cargo_license::get_dependencies_from_cargo_lock(&cmd, &opts)
             .unwrap()
             .into_iter()
             .map(|dependency_details| {
