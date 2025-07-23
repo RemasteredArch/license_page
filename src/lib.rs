@@ -6,6 +6,8 @@
 // copy of the Mozilla Public License was not distributed with this file, You can obtain one at
 // <https://mozilla.org/MPL/2.0/>.
 
+pub mod opt;
+
 use std::{
     collections::{BTreeSet, HashMap},
     fmt::Display,
@@ -14,6 +16,7 @@ use std::{
 };
 
 use cargo_license::{DependencyDetails, GetDependenciesOpt};
+use opt::{GetLicensesOpt, ToMarkdownPageOpt};
 use spdx::{ExceptionId, Expression, LicenseId};
 
 /// A list of lowercase SPDX License Identifiers and the corresponding license texts, sorted by the
@@ -157,6 +160,26 @@ impl Crate {
     }
 }
 
+pub struct CratesByLicense<'a> {
+    license_expression: &'a Expression,
+    crates: Box<[&'a Crate]>,
+}
+
+impl<'a> CratesByLicense<'a> {
+    #[inline]
+    pub fn crate_count(&self) -> usize {
+        self.crates.len()
+    }
+
+    pub fn license_expression(&self) -> &'a Expression {
+        self.license_expression
+    }
+
+    pub fn crates(&self) -> &[&'a Crate] {
+        &self.crates
+    }
+}
+
 pub struct CrateList {
     list: Box<[Crate]>,
 }
@@ -164,17 +187,15 @@ pub struct CrateList {
 impl CrateList {
     /// Fetches the [`Crate`] information for direct and indirect dependencies of the crate at
     /// `directory_path`.
-    pub fn from_crate_directory(directory_path: &str) -> Self {
+    pub fn from_crate_directory(directory_path: &str, opt: GetLicensesOpt) -> Self {
         let mut cmd = cargo_metadata::MetadataCommand::new();
         // TO-DO: add some way to control features, platform, etc.?
         cmd.current_dir(directory_path);
 
         let opts = GetDependenciesOpt {
-            // Don't include development dependencies for release builds, detected by whether debug
-            // assertions are enabled.
-            avoid_dev_deps: !cfg!(debug_assertions),
-            avoid_build_deps: true,
-            avoid_proc_macros: false,
+            avoid_dev_deps: opt.avoid_dev_deps(),
+            avoid_build_deps: opt.avoid_build_deps(),
+            avoid_proc_macros: opt.avoid_proc_macros(),
             direct_deps_only: false,
             root_only: false,
         };
@@ -229,46 +250,66 @@ impl CrateList {
         self.list.as_ref()
     }
 
-    pub fn by_license(&self) -> Box<[(usize, &Expression, Box<[&Crate]>)]> {
-        fn increment_and_append_or_insert<'a>(
-            map: &mut HashMap<&'a str, (usize, Vec<&'a Crate>)>,
+    pub fn by_license(&self) -> Box<[CratesByLicense]> {
+        fn append_or_insert<'a>(
+            map: &mut HashMap<&'a str, Vec<&'a Crate>>,
             current_crate: &'a Crate,
         ) {
             let license: &str = current_crate.license.as_ref();
             match map.get_mut(license) {
-                Some((current_count, crates)) => {
-                    *current_count += 1;
+                Some(crates) => {
                     crates.push(current_crate);
                 }
                 None => {
-                    map.insert(license, (1, Vec::from([current_crate])));
+                    map.insert(license, Vec::from([current_crate]));
                 }
             };
         }
 
-        let mut by_license: HashMap<&str, (usize, Vec<&Crate>)> = HashMap::new();
+        let mut by_license: HashMap<&str, Vec<&Crate>> = HashMap::new();
         for current_crate in self.list.iter() {
-            increment_and_append_or_insert(&mut by_license, current_crate);
+            append_or_insert(&mut by_license, current_crate);
         }
+
         let mut vec = by_license
-            .into_iter()
-            .map(|(_, (count, crates))| (count, &crates[0].license, crates.into_boxed_slice()))
+            .into_values()
+            .map(|crates| CratesByLicense {
+                license_expression: &crates[0].license,
+                crates: crates.into_boxed_slice(),
+            })
             .collect::<Vec<_>>();
-        vec.sort_unstable_by(|(count_lhs, _, _), (count_rhs, _, _)| {
-            count_lhs.cmp(count_rhs).reverse()
-        });
+        vec.sort_unstable_by(|lhs, rhs| lhs.crate_count().cmp(&rhs.crate_count()).reverse());
+
         vec.into_boxed_slice()
     }
 
-    pub fn to_markdown_license_page(&self, out: &mut impl Write) -> std::io::Result<()> {
+    pub fn to_markdown_license_page(
+        &self,
+        out: &mut impl Write,
+        opt: ToMarkdownPageOpt,
+    ) -> std::io::Result<()> {
+        if let Some(preamble) = opt.preamble_section() {
+            writeln!(out, "{preamble}\n")?;
+        }
+
         writeln!(out, "# Crate Licenses")?;
+        if let Some(preamble) = opt.crate_licenses_preamble() {
+            writeln!(out, "{preamble}\n")?;
+        }
+
         let mut ids_to_print = BTreeSet::<LicensePart>::new();
 
-        for (count, license_expression, crates) in self.by_license() {
+        for crates_by_license in self.by_license() {
+            let count = crates_by_license.crate_count();
+            let CratesByLicense {
+                license_expression,
+                crates,
+            } = crates_by_license;
+
             writeln!(
                 out,
                 "\n## `{license_expression}`\n\nUsed by {count} {}:\n",
-                if count == 1 { "crate" } else { "crates" }
+                if count == 1 { "crate" } else { "crates" },
             )?;
 
             for CrateMarkdown {
@@ -277,7 +318,7 @@ impl CrateList {
                 authors,
                 repository,
                 ..
-            } in crates.iter().map(|&c| c.clone().into_markdown())
+            } in crates.into_iter().map(|c| c.clone().into_markdown())
             {
                 writeln!(out, "- {name} {version}\n  - Repository: {repository}")?;
                 match authors.len() {
