@@ -254,7 +254,7 @@ impl CrateList {
         self.list.as_ref()
     }
 
-    pub fn by_license(&self) -> Box<[CratesByLicense]> {
+    pub fn by_license(&self) -> Box<[CratesByLicense<'_>]> {
         fn append_or_insert<'a>(
             map: &mut HashMap<&'a str, Vec<&'a Crate>>,
             current_crate: &'a Crate,
