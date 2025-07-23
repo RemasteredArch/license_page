@@ -53,7 +53,7 @@ impl FromStr for Author {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut parts = s.split(' ').collect::<Vec<_>>();
 
-        if parts.is_empty() || (parts.len() == 1 && !parts.first().unwrap().is_empty()) {
+        if parts.is_empty() || (parts.len() == 1 && parts.first().unwrap().is_empty()) {
             return Err(EmptyAuthorError);
         }
 
