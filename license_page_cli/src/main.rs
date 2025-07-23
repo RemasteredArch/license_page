@@ -12,7 +12,8 @@ use license_page::CrateList;
 
 fn main() -> std::io::Result<()> {
     let directory_path = std::env::args().nth(1).unwrap_or_else(|| ".".to_string());
-    let crates = CrateList::from_crate_directory(directory_path.as_str());
+
+    let crates = CrateList::from_crate_directory(directory_path.as_str(), Default::default());
 
     // Replicates `cargo-license`:
     //
@@ -30,5 +31,5 @@ fn main() -> std::io::Result<()> {
     // ```
 
     let mut stdout = BufWriter::new(std::io::stdout().lock());
-    crates.to_markdown_license_page(&mut stdout)
+    crates.to_markdown_license_page(&mut stdout, Default::default())
 }
