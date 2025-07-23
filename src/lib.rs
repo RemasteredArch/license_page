@@ -298,7 +298,7 @@ impl CrateList {
 
         writeln!(out, "# Crate Licenses")?;
         if let Some(preamble) = opt.crate_licenses_preamble() {
-            writeln!(out, "{preamble}\n")?;
+            writeln!(out, "\n{preamble}\n")?;
         }
 
         let mut ids_to_print = BTreeSet::<LicensePart>::new();
