@@ -26,7 +26,7 @@ use spdx::{ExceptionId, Expression, LicenseId};
 /// <https://github.com/github/choosealicense.com/tree/gh-pages/_licenses>.
 const LICENSE_TEXTS: [(&str, &str); 47] = include!("../data/choosealicense.com_licenses.rs");
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Author {
     pub name: String,
     pub email: Option<String>,
@@ -44,6 +44,7 @@ impl Display for Author {
     }
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct EmptyAuthorError;
 
 impl FromStr for Author {
@@ -102,7 +103,7 @@ fn escape_markdown(str: String) -> String {
     out
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Crate {
     pub name: String,
     pub version: String,
@@ -111,6 +112,7 @@ pub struct Crate {
     pub license: Expression,
 }
 
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct CrateMarkdown {
     pub name: String,
     pub version: String,
@@ -160,6 +162,7 @@ impl Crate {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub struct CratesByLicense<'a> {
     license_expression: &'a Expression,
     crates: Box<[&'a Crate]>,
@@ -180,6 +183,7 @@ impl<'a> CratesByLicense<'a> {
     }
 }
 
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct CrateList {
     list: Box<[Crate]>,
 }
@@ -370,7 +374,7 @@ impl CrateList {
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub enum LicensePart {
     License(LicenseId),
     Exception(ExceptionId),
