@@ -8,9 +8,9 @@ pub struct GetLicensesOpt {
 impl GetLicensesOpt {
     pub fn new() -> Self {
         Self {
-            avoid_dev_deps: true,
-            avoid_build_deps: true,
-            avoid_proc_macros: true,
+            avoid_dev_deps: false,
+            avoid_build_deps: false,
+            avoid_proc_macros: false,
         }
     }
 
